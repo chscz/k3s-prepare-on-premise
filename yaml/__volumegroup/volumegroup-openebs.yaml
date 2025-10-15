@@ -1,0 +1,7 @@
+apiVersion: local.openebs.io/v1alpha1
+kind: LVMVolumeGroup
+metadata:
+  name: openebs-vg
+  namespace: openebs
+spec:
+  volumeGroup: "openebs-vg"

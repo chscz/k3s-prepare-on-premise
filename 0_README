@@ -1,0 +1,27 @@
+1. 외부망이 되는 환경에서 1_prepare-k3s-k9s-files.sh, 2_prepare-image-tars.sh 를 실행하여 파일 준비
+  - 1_prepare-k3s-k9s-files.sh 실행시 해당 경로에 k3s-offline-bundle 디렉토리 생성됨
+  - 2_prepare-image-tars.sh 실행시 해당 경로에 image-tars 디렉토리 생성됨
+
+2. 기존 파일 및 디렉토리와 1번 과정에서 생성된 파일 및 디렉토리를 설치 대상 서버로 파일 복사
+  - 마스터노드:
+    - k3s-offline-bundle/
+    - image-tars/
+    - 3_install-offline.sh
+    - 4_setup-k3s-config.sh
+    - 5_import-images.sh
+    - 6_setup-disk.sh
+    - 7_taint.sh
+  - 워커노드
+    - k3s-offline-bundle
+    - 3_install-offline.sh
+    - 4_setup-k3s-config.sh
+    - 5_setup-disk.sh
+
+3. 계정 생성 및 wheel 그룹에 추가(root 사용시 해당 과정 생략)
+  - wheel 그룹이 아닌 일반 계정을 사용할 경우 나도 모름 안해봄
+
+4. 3_install-offline.sh 실행
+
+5. 4_import-images.sh 실행
+
+

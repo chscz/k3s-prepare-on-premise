@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: api
+  namespace: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: imqa-web
+      tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        operator: Equal
+        value: api
+      restartPolicy: Always
+      containers:
+        - name: api
+          image: imqav3.azurecr.io/api:1.5.6
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8000
+          envFrom:
+            - configMapRef:
+                name: api-config
+            - secretRef:
+                name: api-secret
+          volumeMounts:
+            - mountPath: /app/config/saml/
+              name: config-volume
+      volumes:
+        - name: config-volume
+          emptyDir: {}

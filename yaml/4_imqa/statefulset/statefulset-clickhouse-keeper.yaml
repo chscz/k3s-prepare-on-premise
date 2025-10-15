@@ -1,0 +1,78 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: clickhouse-keeper
+  namespace: database
+  labels:
+    app.kubernetes.io/component: keeper
+    app.kubernetes.io/instance: clickhouse
+    app.kubernetes.io/name: clickhouse
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: keeper
+      app.kubernetes.io/instance: clickhouse
+      app.kubernetes.io/name: clickhouse
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      storageClassName: "openebs-lvmpv"
+      resources:
+        requests:
+          storage: 5Gi
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: keeper
+        app.kubernetes.io/instance: clickhouse
+        app.kubernetes.io/name: clickhouse
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: imqa-database
+      tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "database"
+        effect: "NoSchedule"
+      serviceAccountName: clickhouse
+      automountServiceAccountToken: false
+      containers:
+      - name: keeper
+        image: clickhouse/clickhouse-keeper:24.12.3.47-alpine
+        imagePullPolicy: IfNotPresent
+        command:
+          - /bin/sh
+          - "-c"
+          - |
+            export CLICKHOUSE_KEEPER_SERVER_ID=$((${HOSTNAME##*-} + 1))
+            exec /usr/bin/clickhouse-keeper --config /etc/clickhouse-keeper/keeper_config.xml
+        env:
+        - name: CLICKHOUSE_KEEPER_TCP_PORT
+          value: "9181"
+        - name: CLICKHOUSE_KEEPER_RAFT_PORT
+          value: "9234"
+        ports:
+        - name: tcp
+          containerPort: 9181
+        - name: raft
+          containerPort: 9234
+        resources:
+          requests:
+            cpu: "1"
+            memory: 1Gi
+          limits:
+            cpu: "4"
+            memory: 6Gi
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/clickhouse-keeper
+        - name: configuration
+          mountPath: /etc/clickhouse-keeper/keeper_config.xml
+          subPath: keeper_config.xml
+      volumes:
+      - name: configuration
+        configMap:
+          name: clickhouse-keeper-config

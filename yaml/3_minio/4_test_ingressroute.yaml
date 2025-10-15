@@ -1,0 +1,30 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: minio-test-route
+  namespace: api # 👈 'api' 네임스페이스에 생성
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`test-nh.imqa.io`) && PathPrefix(`/minio`)
+      kind: Rule
+      services:
+        - name: minio-console # 서비스 이름
+          namespace: minio   # 👈 서비스의 실제 네임스페이스를 명시
+          port: 9001
+      middlewares:
+        - name: minio-stripprefix-in-api
+          namespace: api
+  tls:
+    secretName: web-tls # 'api' 네임스페이스에 이미 존재하는 Secret
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: minio-stripprefix-in-api
+  namespace: api # 👈 'api' 네임스페이스에 생성
+spec:
+  stripPrefix:
+    prefixes:
+      - /minio

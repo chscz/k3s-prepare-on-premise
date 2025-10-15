@@ -1,0 +1,30 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: minio-ingress
+  namespace: minio
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: minio-stripprefix@kubernetescrd
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: test-nh.imqa.io
+    http:
+      paths:
+      - path: /minio
+        pathType: Prefix
+        backend:
+          service:
+            name: minio-console
+            port:
+              number: 9001
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: minio-stripprefix
+  namespace: minio
+spec:
+  stripPrefix:
+    prefixes:
+      - /minio

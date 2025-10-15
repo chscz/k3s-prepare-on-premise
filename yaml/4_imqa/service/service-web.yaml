@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: imqa-web
+  namespace: api
+spec:
+  type: ClusterIP
+  ports:
+  - port: 3301
+    targetPort: 3000
+    protocol: TCP
+  selector:
+    app: imqa-web
