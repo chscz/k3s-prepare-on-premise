@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector-symbolicator
+  namespace: collector
+  labels:
+    app: otel-collector-symbolicator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector-symbolicator
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: otel-collector-symbolicator
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: imqa-symbolicator
+      tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "symbolicator"
+        effect: "NoSchedule"      
+      containers:
+        - name: otel-collector-symbolicator
+          image: imqav3.azurecr.io/otel-collector-symbolicator:1.5.5
+          imagePullPolicy: IfNotPresent
+          args:
+            - --config=/etc/otel-collector-symbolicator-config.yaml
+          envFrom:
+            - configMapRef:
+                name: otel-collector-symbolicator-config
+            - secretRef:
+                name: otel-collector-symbolicator-secret     
+          ports:
+            - containerPort: 4319
+              name: otlp-http
+              protocol: TCP
+          volumeMounts:
+            - name: config-volume
+              mountPath: /etc/otel-collector-symbolicator-config.yaml
+              subPath: otel-collector-symbolicator-config.yaml
+      volumes:
+        - name: config-volume
+          configMap:
+            name: otel-collector-symbolicator-config

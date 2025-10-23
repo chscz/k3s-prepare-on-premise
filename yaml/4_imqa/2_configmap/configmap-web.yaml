@@ -1,0 +1,19 @@
+apiVersion: v1
+data:
+  NEXT_PUBLIC_API_URL: https://test-nh.imqa.io
+  NEXT_PUBLIC_APP_URL: https://test-nh.imqa.io
+  NEXT_PUBLIC_AUTH_PROVIDER: credentials
+  NEXT_PUBLIC_AUTHENTICATOR: none
+  NEXT_PUBLIC_ENABLE_NEW_USER_CREATION: "true"
+  NEXT_PUBLIC_MAPPING_FILE: "true"
+  NEXT_PUBLIC_QUERY_BUILDER: "false"
+  NEXT_PUBLIC_SAML_SESSION_CHECK_DELAY_MS: "1000"
+  NEXT_PUBLIC_SAML_SUCCESS_REDIRECT_URL: /services
+  NEXT_PUBLIC_SERVICE_MODE: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXTAUTH_URL: https://test-nh.imqa.io/api/auth
+kind: ConfigMap
+metadata:
+  name: web-config
+  namespace: api
+

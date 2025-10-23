@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-usersd
+  namespace: database
+data:
+  users.xml: |
+    <?xml version="1.0"?>
+    <clickhouse replace="true">
+      <profiles>
+        <default>
+          <max_memory_usage>58000000000</max_memory_usage>
+          <use_uncompressed_cache>0</use_uncompressed_cache>
+          <load_balancing>in_order</load_balancing>
+          <log_queries>1</log_queries>
+        </default>
+      </profiles>
+      <users>
+        <default>
+          <access_management>1</access_management>
+          <profile>default</profile>
+          <networks>
+            <ip>::/0</ip>
+          </networks>
+          <quota>default</quota>
+          <named_collection_control>1</named_collection_control>
+          <show_named_collections>1</show_named_collections>
+          <show_named_collections_secrets>1</show_named_collections_secrets>
+          <password from_env="CLICKHOUSE_DEFAULT_PASSWORD"/>
+        </default>
+        <tester>
+          <access_management>1</access_management>
+          <password>tester</password>
+          <networks>
+            <ip>::/0</ip>
+          </networks>
+          <profile>default</profile>
+          <quota>default</quota>
+          <named_collection_control>1</named_collection_control>
+          <show_named_collections>1</show_named_collections>
+          <show_named_collections_secrets>1</show_named_collections_secrets>
+        </tester>
+      </users>
+      <quotas>
+        <default>
+          <interval>
+            <duration>3600</duration>
+            <queries>0</queries>
+            <errors>0</errors>
+            <result_rows>0</result_rows>
+            <read_rows>0</read_rows>
+            <execution_time>0</execution_time>
+          </interval>
+        </default>
+      </quotas>
+    </clickhouse>
+
+---
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: clickhouse-configd
+  namespace: database
+data:
+  config.xml: |
+    <?xml version="1.0"?>
+    <clickhouse replace="true">
+      <listen_host>::</listen_host>
+      <listen_host>0.0.0.0</listen_host>
+      <listen_try>1</listen_try>
+
+      <logger>
+        <level>information</level>
+        <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+      </logger>
+
+      <macros>
+        <shard from_env="CLICKHOUSE_SHARD_ID"></shard>
+        <replica from_env="CLICKHOUSE_REPLICA_ID"></replica>
+        <layer>clickhouse</layer>
+      </macros>
+
+      <zookeeper>
+        <node>
+          <host>clickhouse-keeper.database.svc.cluster.local</host>
+          <port>9181</port>
+        </node>
+      </zookeeper>
+
+      <asynchronous_insert_log remove="1"/>
+      <asynchronous_metric_log remove="1"/>
+      <error_log remove="1"/>
+      <event_log remove="1"/>
+      <latency_log remove="1"/>
+      <metric_log remove="1"/>
+      <query_metric_log remove="1"/>
+      <query_thread_log remove="1"/>
+      <query_views_log remove="1"/>
+      <part_log remove="1"/>
+      <text_log remove="1"/>
+      <trace_log remove="1"/>
+      <opentelemetry_span_log remove="1"/>
+      <processors_profile_log remove="1"/>
+
+      <query_log>
+        <database>system</database>
+        <table>query_log</table>
+        <max_size>10000000</max_size>
+        <flush_interval_milliseconds>5000</flush_interval_milliseconds>
+        <partition_by>toYYYYMM(event_date)</partition_by>
+        <ttl>event_date + INTERVAL 7 DAY DELETE</ttl>
+      </query_log>
+
+      <named_collections>
+        <postgres_creds>
+          <host>postgresql.database.svc.cluster.local</host>
+          <port>5432</port>
+          <user>postgres</user>
+          <password>XVK^eoM{nF8)w5l</password>
+          <database>apidb</database>
+          <schema>public</schema>
+        </postgres_creds>
+      </named_collections>
+
+      <distributed_ddl>
+        <path>/clickhouse/task_queue/ddl</path>
+      </distributed_ddl>
+
+      <prometheus>
+        <endpoint>/metrics</endpoint>
+        <port>9363</port>
+        <metrics>true</metrics>
+        <events>true</events>
+        <asynchronous_metrics>true</asynchronous_metrics>
+        <status_info>true</status_info>
+      </prometheus>
+
+      <remote_servers>
+        <cluster>
+          <shard>
+            <internal_replication>true</internal_replication>
+            <replica>
+              <host>127.0.0.1</host>
+              <port>9000</port>
+            </replica>
+          </shard>
+        </cluster>
+      </remote_servers>
+    </clickhouse>
