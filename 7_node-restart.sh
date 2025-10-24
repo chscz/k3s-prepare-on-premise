@@ -1,4 +1,5 @@
 #!/bin/bash
+## 이전 단계들에서 설정한 내용들을 적용하기 위한 서비스 재시작
 
 # Detect node role and restart
 if systemctl is-active --quiet k3s; then

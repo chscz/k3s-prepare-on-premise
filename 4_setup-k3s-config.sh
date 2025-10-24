@@ -1,4 +1,5 @@
 #!/bin/bash
+## 마스터 노드: config.yaml / 워커 노드: config.yaml, registries.yaml 을 생성
 # ===============================================
 # setup-k3s-config.sh
 # - Detects if the node is master or worker in K3s
@@ -43,4 +44,6 @@ else
 fi
 
 echo "✅ Configuration completed successfully."
-
+echo "✅ /etc/rancher/k3s/config.yaml 파일에 노드이름 설정 필요"
+echo '✅ config.yaml 의 최상위에  node-name: "<노드 이름>" 추가'
+echo "✅ 노드이름은 사용하는 노드 수 또는 구성에 따라 임의로 지정하며 중복없어야 하고 모든 노드에 설정 권장"
