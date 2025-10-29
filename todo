@@ -1,0 +1,15 @@
+- manifest template
+
+- manifest option script
+  - nodeSelect
+  - taint
+  - toleration
+  - resource
+  - tls
+  - ingress host
+
+- set env:K3S_NODE_NAME in service.env/service.agent.env
+
+- tls-san
+
+- readme update

@@ -4,7 +4,7 @@ metadata:
   name: otel-collector
   namespace: collector
 spec:
-  type: ClusterIP
+  type: NodePort
   selector:
     app: otel-collector
   ports:
@@ -12,7 +12,10 @@ spec:
     port: 4318
     protocol: TCP
     targetPort: 4318
+    nodePort: 30418
   - name: grpc
     port: 4319
     protocol: TCP
     targetPort: 4319
+    nodePort: 30419
+    

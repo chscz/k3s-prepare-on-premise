@@ -1,3 +1,13 @@
+### check
+- `node taint`
+- `node count`, `node name`
+- `k3s config.yaml`
+- `volume group`, `physical volume`, `logical volume`
+- `daemonset`, `deployment`, `statefulset` >> `nodeSelector`, `toleration`
+- `ttl setting`, `ingress setting`
+- `dns`, `url`, `host`, `ip`
+- `postgres migrate`
+---
 ### 1. 외부망이 되는 환경에서 1_prepare-k3s-k9s-files.sh, 2_prepare-image-tars.sh 를 실행하여 파일 준비
   - 1_prepare-k3s-k9s-files.sh 실행시 해당 경로에 k3s-offline-bundle 디렉토리 생성됨
   - 2_prepare-image-tars.sh 실행시 해당 경로에 image-tars 디렉토리 생성됨
