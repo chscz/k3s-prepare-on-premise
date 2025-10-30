@@ -8,9 +8,9 @@
 - `dns`, `url`, `host`, `ip`
 - `postgres migrate`
 ---
-### 1. 외부망이 되는 환경에서 1_prepare-k3s-k9s-files.sh, 2_prepare-image-tars.sh 를 실행하여 파일 준비
-  - 1_prepare-k3s-k9s-files.sh 실행시 해당 경로에 k3s-offline-bundle 디렉토리 생성됨
-  - 2_prepare-image-tars.sh 실행시 해당 경로에 image-tars 디렉토리 생성됨
+### 1. 외부망이 되는 환경에서 `1_prepare-k3s-k9s-files.sh`, `2_prepare-image-tars.sh` 를 실행하여 파일 준비
+  - `1_prepare-k3s-k9s-files.sh` 실행시 해당 경로에 `k3s-offline-bundle` 디렉토리 생성됨
+  - `2_prepare-image-tars.sh` 실행시 해당 경로에 `image-tars` 디렉토리 생성됨
   - imqa 이미지와 같이 private registry 에 저장되어 로그인 또는 인증이 필요한 이미지들은 별도 준비
 ---
 ### 2. 기존 파일 및 디렉토리와 1번 과정에서 생성된 파일 및 디렉토리를 설치 대상 서버로 파일 복사
