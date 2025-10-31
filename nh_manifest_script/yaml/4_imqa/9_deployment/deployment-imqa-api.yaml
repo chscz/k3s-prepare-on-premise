@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: imqa-api
+  namespace: api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: imqa-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+  template:
+    metadata:
+      labels:
+        app: imqa-api
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: imqa-web
+      tolerations:
+      - key: "dedicated"
+        operator: "Equal"
+        value: "api"
+        effect: "NoSchedule"          
+      restartPolicy: Always
+      containers:
+        - name: imqa-api
+          image: imqav3.azurecr.io/imqa-api:1.5.8
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+            - containerPort: 8085
+          envFrom:
+            - configMapRef:
+                name: imqa-api-config
+            - secretRef:
+                name: imqa-api-secret
+      terminationGracePeriodSeconds: 30

@@ -1,0 +1,22 @@
+apiVersion: v1
+data:
+  API_DOMAIN: https://test-nh.imqa.io
+  API_ENV: prod
+  API_QUERY_SERVICE_URL: http://imqa-api:8080
+  AUTH_URL: https://test-nh.imqa.io/api/auth
+  CORS_ORIGINS: https://studio.apollographql.com,https://test-nh.imqa.io,https://test-nh.imqa.io:8000,http://imqa-api
+  DATABASE_URL: postgresql://postgres:djslzjapostgres@postgresql.database.svc.cluster.local:5432/apidb?schema=public&connection_limit=50&pool_timeout=20
+  DEPLOYMENT_TYPE: docker-standalone-amd
+  LOG_FORMAT: plain
+  LOG_LEVEL: debug
+  MAX_ROW_COUNT: "1000000"
+  NEXT_PUBLIC_AUTH_PROVIDER: credentials
+  SAML_CONFIG_FILE: /app/config/saml/config.json
+  SEED_ADMIN_EMAIL: admin@imqa.io
+  S3_ENDPOINT: http://minio.minio.svc.cluster.local:9000
+  S3_BUCKET_NAME: api
+kind: ConfigMap
+metadata:
+  name: api-config
+  namespace: api
+

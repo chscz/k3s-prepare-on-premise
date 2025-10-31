@@ -1,0 +1,94 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: collector
+data:
+  OTEL_COLLECTOR_API_ENDPOINT: "http://api"
+  OTEL_COLLECTOR_DOCKER_MULTI_NODE_CLUSTER: "false"
+  OTEL_COLLECTOR_LOW_CARDINAL_EXCEPTION_GROUPING: "false"
+  OTEL_COLLECTOR_OTLP_EXPORTER_SYMBOLICATOR_ENDPOINT: "http://otel-collector-symbolicator"
+
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+            cors:
+              allowed_origins:
+                - http://*
+                - https://*
+              allowed_headers:
+                - "*"
+    processors:
+      imqaconsoleprintprocessor:
+        trace_enabled: false
+        log_enabled: false
+      imqaserviceprocessor:
+        api_endpoint: ${env:OTEL_COLLECTOR_API_ENDPOINT}/api/v1/services
+        enabled: false
+        service_data_fetch_interval: 60s
+        use_insecure: true
+      imqaattributeprocessor:
+        api_endpoint: ${env:OTEL_COLLECTOR_API_ENDPOINT}/api/v1/screens
+        enabled: true
+        group_data_fetch_interval: 60s
+        use_insecure: true
+      batch:
+        send_batch_size: 10000
+        send_batch_max_size: 11000
+        timeout: 10s
+      memory_limiter:
+        limit_mib: 1500
+        spike_limit_mib: 512
+        check_interval: 5s
+        limit_percentage: 50
+        spike_limit_percentage: 20
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      zpages:
+        endpoint: 0.0.0.0:55679
+      pprof:
+        endpoint: 0.0.0.0:1777
+    exporters:
+      clickhousetraces:
+        datasource: ${env:OTEL_COLLECTOR_CLICKHOUSE_DSN}/imqa_traces
+        docker_multi_node_cluster: false
+        low_cardinal_exception_grouping: false
+      clickhouselogsexporterv2:
+        endpoint: ${env:OTEL_COLLECTOR_CLICKHOUSE_DSN}
+        database: imqa_logs
+        logs_table_name: logs_v2
+        create_schema: false
+        timeout: 10s
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
+      otlphttp:
+        traces_endpoint: ${env:OTEL_COLLECTOR_OTLP_EXPORTER_SYMBOLICATOR_ENDPOINT}/v1/traces
+        logs_endpoint: ${env:OTEL_COLLECTOR_OTLP_EXPORTER_SYMBOLICATOR_ENDPOINT}/v1/logs
+        encoding: json
+    service:
+      telemetry:
+        metrics:
+          level: none
+          address: 0.0.0.0:8888
+      extensions:
+      - health_check
+      - zpages
+      - pprof
+      pipelines:
+        traces:
+          receivers: [ otlp ]
+          processors: [ imqaconsoleprintprocessor, memory_limiter, imqaattributeprocessor, batch ]
+          exporters: [ clickhousetraces, otlphttp ]
+        logs:
+          receivers: [ otlp ]
+          processors: [ imqaconsoleprintprocessor, memory_limiter, imqaattributeprocessor, batch ]
+          exporters: [ clickhouselogsexporterv2, otlphttp ]
