@@ -156,24 +156,28 @@ create_aux_scripts
 sudo mkdir -p /etc/rancher/k3s
 
 # --- 노드 이름 입력 ---
-read -rp "🖥️  노드 이름을 입력하세요 (예: master-01 또는 worker-01): " NODE_NAME
-if [ -z "${NODE_NAME}" ]; then
-  echo "❌ 노드 이름은 반드시 입력해야 합니다."
-  exit 1
-fi
+while true; do
+  read -rp "🖥️  노드 이름을 입력하세요 (예: master-01 또는 worker-01): " NODE_NAME
+  if [ -n "${NODE_NAME}" ]; then
+    break
+  else
+    echo "❌ 노드 이름은 비워둘 수 없습니다. 다시 입력해주세요."
+  fi
+done
 
 # --- 역할별 처리 ---
 if [ "$ROLE" == "server" ]; then
   echo "-----------------------------------------------------"
   echo "🚀 K3s 서버(마스터) 설치 시작..."
+  MASTER_IP=$(hostname -I | awk '{print $1}')
+  echo "📡 서버 IP 감지됨: ${MASTER_IP}"
 
   sudo tee /etc/rancher/k3s/config.yaml >/dev/null <<EOF
 node-name: ${NODE_NAME}
 embedded-registry: true
 write-kubeconfig-mode: "0644"
-disable:
-  - traefik
-  - servicelb
+tls-san:
+  - ${MASTER_IP}
 EOF
 
   sudo tee /etc/rancher/k3s/registries.yaml >/dev/null <<EOF
@@ -192,6 +196,9 @@ EOF
   fi
 
   echo "✅ K3s 서버 설치 완료!"
+
+  echo "🔑 마스터노드 IP:"
+  echo "   ${MASTER_IP}"
   echo "🔑 워커 조인 토큰:"
   sudo cat /var/lib/rancher/k3s/server/node-token || echo "(아직 생성 중입니다.)"
 
