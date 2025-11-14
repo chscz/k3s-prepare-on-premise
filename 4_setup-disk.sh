@@ -6,9 +6,9 @@
 ## sudo pvremove /dev/vdb                                                 # 물리 볼륨 제거
 ## sudo wipefs -a /dev/vdb                                                # 디스크 서명 제거
 ##### 확인
-## sudo pvs        # 현재 시스템에서 물리볼륨(PV) → 볼륨그룹(VG) 확인 가능
-## lsblk -f        # LVM2_member 여부 확인
+## lsblk -f        # os root file system 여부 확인
 ## sudo vgdisplay  # VG 상세 확인
+## sudo pvdisplay  # PV 상세 확인
 ## sudo lvdisplay  # 볼륨그룹과 논리볼륨을 포함해 모든 LVM 정보 확인
 
 sudo pvcreate /dev/vdb

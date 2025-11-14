@@ -116,16 +116,50 @@ setup_kubeconfig() {
   fi
 }
 
-# --- 메인 실행 ---
-if [ $# -lt 1 ]; then
-  echo "사용법:"
-  echo "  서버 설치: $0 server"
-  echo "  워커 설치: $0 agent <MASTER_IP> <NODE_TOKEN>"
-  exit 1
+
+# 🔄 메인 실행 블록
+ROLE=""
+MASTER_IP=""
+NODE_TOKEN=""
+
+if [ $# -gt 0 ]; then
+  echo "⚠️ 경고: 스크립트 실행 시 매개변수는 무시됩니다. 메뉴를 통해 역할을 선택해주세요."
 fi
 
-ROLE=$1
+while true; do
+  echo "--- K3s 설치 역할 선택 ---"
+  echo "1. server (마스터/컨트롤 플레인)"
+  echo "2. agent (워커 노드)"
+  read -rp "👉 역할을 선택하세요 (1 또는 2): " CHOICE
+  case "$CHOICE" in
+    1)
+      ROLE="server"
+      break
+      ;;
+    2)
+      ROLE="agent"
+      # Agent 선택 시 IP와 토큰을 순서대로 입력받음
+      read -rp "🔗 마스터 노드의 IP 주소를 입력하세요 (예: 192.168.0.6): " MASTER_IP
+      if [ -z "${MASTER_IP}" ]; then
+        echo "❌ 마스터 IP는 필수 입력 값입니다."
+        continue
+      fi
+      read -rp "🔑 마스터 노드의 토큰을 입력하세요(/etc/rancher/k3s/server/token): " NODE_TOKEN
+      if [ -z "${NODE_TOKEN}" ]; then
+        echo "❌ 토큰은 필수 입력 값입니다."
+        continue
+      fi
+      break
+      ;;
+    *)
+      echo "❌ 잘못된 선택입니다. 1 또는 2를 입력해주세요."
+      ;;
+  esac
+done
+
 detect_os
+echo "-----------------------------------------------------"
+echo "선택된 역할: ${ROLE}"
 echo "감지된 OS 계열: ${OS_FAMILY}"
 echo "-----------------------------------------------------"
 
@@ -165,6 +199,25 @@ while true; do
   fi
 done
 
+# --- 노드 레이블 입력 ---
+NODE_LABELS=()
+echo "🏷️  노드 레이블을 추가하세요. (예: key=value)"
+echo "    👉 key와 value를 따로 입력하며, 입력을 마치려면 엔터만 누르세요."
+
+while true; do
+  read -rp "  🔑 Label Key: " LABEL_KEY
+  if [ -z "${LABEL_KEY}" ]; then
+    break
+  fi
+  read -rp "  📦 Label Value: " LABEL_VALUE
+  if [ -z "${LABEL_VALUE}" ]; then
+    echo "❌ Value는 비워둘 수 없습니다. 다시 입력해주세요."
+    continue
+  fi
+  NODE_LABELS+=("${LABEL_KEY}=${LABEL_VALUE}")
+done
+
+
 # --- 역할별 처리 ---
 if [ "$ROLE" == "server" ]; then
   echo "-----------------------------------------------------"
@@ -174,8 +227,18 @@ if [ "$ROLE" == "server" ]; then
 
   sudo tee /etc/rancher/k3s/config.yaml >/dev/null <<EOF
 node-name: ${NODE_NAME}
+
+$(if [ ${#NODE_LABELS[@]} -gt 0 ]; then
+  echo "node-label:"
+  for lbl in ${NODE_LABELS[@]}; do
+    echo "  - ${lbl}"
+  done
+fi)
+
 embedded-registry: true
-write-kubeconfig-mode: "0644"
+
+write-kubeconfig-mode: 0644
+
 tls-san:
   - ${MASTER_IP}
 EOF
@@ -203,18 +266,21 @@ EOF
   sudo cat /var/lib/rancher/k3s/server/node-token || echo "(아직 생성 중입니다.)"
 
 elif [ "$ROLE" == "agent" ]; then
-  if [ $# -ne 3 ]; then
-    echo "❌ 사용법: $0 agent <MASTER_IP> <NODE_TOKEN>"
-    exit 1
-  fi
-  MASTER_IP=$2
-  NODE_TOKEN=$3
 
   echo "-----------------------------------------------------"
   echo "💪 K3s 워커(에이전트) 설치 시작..."
+  echo "   마스터 IP: ${MASTER_IP}"
 
   sudo tee /etc/rancher/k3s/config.yaml >/dev/null <<EOF
 node-name: ${NODE_NAME}
+
+$(if [ ${#NODE_LABELS[@]} -gt 0 ]; then
+  echo "node-label:"
+  for lbl in ${NODE_LABELS[@]}; do
+    echo "  - ${lbl}"
+  done
+fi)
+
 server: https://${MASTER_IP}:6443
 token: ${NODE_TOKEN}
 EOF
@@ -228,7 +294,7 @@ EOF
 
   echo "✅ K3s 에이전트 설치 완료!"
 else
-  echo "❌ 오류: 역할은 'server' 또는 'agent'만 가능합니다."
+  echo "❌ 오류: 역할이 정의되지 않았습니다."
   exit 1
 fi
 
