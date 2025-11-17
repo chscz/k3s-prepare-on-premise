@@ -241,6 +241,8 @@ write-kubeconfig-mode: 0644
 
 tls-san:
   - ${MASTER_IP}
+
+service-node-port-range: 30000-40000
 EOF
 
   sudo tee /etc/rancher/k3s/registries.yaml >/dev/null <<EOF
