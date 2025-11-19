@@ -1,0 +1,285 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: database
+---
+apiVersion: v1
+automountServiceAccountToken: false
+kind: ServiceAccount
+metadata:
+  name: clickhouse
+  namespace: database
+---
+apiVersion: v1
+data:
+  CLICKHOUSE_KEEPER_HOST: clickhouse-keeper.database.svc.cluster.local
+  POSTGRES_DATABASE: apidb
+  POSTGRES_HOST: postgresql.database.svc.cluster.local
+  POSTGRES_PORT: "5432"
+  POSTGRES_SCHEMA: public
+kind: ConfigMap
+metadata:
+  name: clickhouse-config
+  namespace: database
+---
+apiVersion: v1
+data:
+  config.xml: |
+    <clickhouse replace="true">
+        <listen_host>0.0.0.0</listen_host>
+        <macros>
+            <shard from_env="CLICKHOUSE_SHARD_ID"/>
+            <replica from_env="CLICKHOUSE_REPLICA_ID"/>
+            <cluster>cluster</cluster>
+        </macros>
+        <remote_servers>
+            <cluster>
+                <shard>
+                    <internal_replication>true</internal_replication>
+                    <replica>
+                        <host replace="1">127.0.0.1</host>
+                        <port>9000</port>
+                    </replica>
+                </shard>
+            </cluster>
+        </remote_servers>
+        <zookeeper>
+            <node>
+                <host replace="1" from_env="CLICKHOUSE_KEEPER_HOST"/>
+                <port>9181</port>
+            </node>
+        </zookeeper>
+        <distributed_ddl>
+            <path>/clickhouse/task_queue/ddl</path>
+        </distributed_ddl>
+        <merge_tree>
+            <deduplicate_merge_projection_mode>rebuild</deduplicate_merge_projection_mode>
+        </merge_tree>
+
+        <path>/var/lib/clickhouse/</path>
+        <tmp_path>/var/lib/clickhouse/tmp/</tmp_path>
+        <user_files_path>/var/lib/clickhouse/user_files/</user_files_path>
+        <format_schema_path>/var/lib/clickhouse/format_schemas/</format_schema_path>
+
+        <logger>
+            <level>debug</level>
+            <log>/var/log/clickhouse-server/clickhouse-server.log</log>
+            <errorlog>/var/log/clickhouse-server/clickhouse-server.err.log</errorlog>
+            <size>1000M</size>
+            <count>10</count>
+        </logger>
+        <text_log>
+            <level>warning</level>
+            <database>system</database>
+            <table>text_log</table>
+            <ttl>event_date + INTERVAL 7 DAY</ttl>
+        </text_log>
+        <query_log>
+            <database>system</database>
+            <table>query_log</table>
+            <max_size>10000000</max_size>
+            <ttl>event_date + INTERVAL 7 DAY</ttl>
+            <flush_interval_milliseconds>5000</flush_interval_milliseconds>
+            <partition_by>toYYYYMMDD(event_date)</partition_by>
+        </query_log>
+        <asynchronous_insert_log remove="1"/>
+        <asynchronous_metric_log remove="1"/>
+        <error_log remove="1"/>
+        <event_log remove="1"/>
+        <latency_log remove="1"/>
+        <metric_log remove="1"/>
+        <query_metric_log remove="1"/>
+        <query_thread_log remove="1"/>
+        <query_views_log remove="1"/>
+        <part_log remove="1"/>
+        <trace_log remove="1"/>
+        <opentelemetry_span_log remove="1"/>
+        <processors_profile_log remove="1"/>
+
+        <named_collections>
+            <postgres_creds>
+                <host replace="1" from_env="POSTGRES_HOST"/>
+                <port replace="1" from_env="POSTGRES_PORT"/>
+                <user replace="1" from_env="POSTGRES_USERNAME"/>
+                <password replace="1" from_env="POSTGRES_PASSWORD"/>
+                <database replace="1" from_env="POSTGRES_DATABASE"/>
+                <schema replace="1" from_env="POSTGRES_SCHEMA"/>
+            </postgres_creds>
+        </named_collections>
+        <timezone>Asia/Seoul</timezone>
+        <storage_configuration>
+            <disks>
+                <backups>
+                    <type>local</type>
+                    <path>/var/lib/clickhouse/backups/</path>
+                </backups>
+            </disks>
+        </storage_configuration>
+        <backups>
+            <allowed_disk>backups</allowed_disk>
+            <allowed_path>/var/lib/clickhouse/backups/</allowed_path>
+        </backups>
+        <user_defined_executable_functions_config>*function.xml</user_defined_executable_functions_config>
+    </clickhouse>
+kind: ConfigMap
+metadata:
+  name: clickhouse-config-xml
+  namespace: database
+---
+apiVersion: v1
+data:
+  users.xml: |
+    <clickhouse replace="true">
+        <profiles>
+            <default>
+                <use_uncompressed_cache>0</use_uncompressed_cache>
+                <load_balancing>in_order</load_balancing>
+                <log_queries>1</log_queries>
+            </default>
+        </profiles>
+        <users>
+            <default>
+                <access_management>1</access_management>
+                <profile>default</profile>
+                <networks>
+                    <ip>::/0</ip>
+                </networks>
+                <quota>default</quota>
+                <named_collection_control>1</named_collection_control>
+                <show_named_collections>1</show_named_collections>
+                <show_named_collections_secrets>1</show_named_collections_secrets>
+                <password replace="1" from_env="DEFAULT_PASSWORD"/>
+            </default>
+        </users>
+        <quotas>
+            <default>
+                <interval>
+                    <duration>3600</duration>
+                    <queries>0</queries>
+                    <errors>0</errors>
+                    <result_rows>0</result_rows>
+                    <read_rows>0</read_rows>
+                    <execution_time>0</execution_time>
+                </interval>
+            </default>
+        </quotas>
+    </clickhouse>
+kind: ConfigMap
+metadata:
+  name: clickhouse-users-xml
+  namespace: database
+---
+apiVersion: v1
+data:
+  DEFAULT_PASSWORD: ZGpzbHpqYTAwODA=
+  POSTGRES_PASSWORD: ZGpzbHpqYTAwODA=
+  POSTGRES_USERNAME: cG9zdGdyZXM=
+kind: Secret
+metadata:
+  name: clickhouse-secret
+  namespace: database
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: clickhouse
+  namespace: database
+spec:
+  ports:
+  - name: http
+    port: 8123
+    targetPort: http
+  - name: tcp
+    port: 9000
+    targetPort: tcp
+  selector:
+    app.kubernetes.io/component: clickhouse
+    app.kubernetes.io/instance: clickhouse
+    app.kubernetes.io/name: clickhouse
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app.kubernetes.io/component: clickhouse
+    app.kubernetes.io/instance: clickhouse
+    app.kubernetes.io/name: clickhouse
+  name: clickhouse
+  namespace: database
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: clickhouse
+      app.kubernetes.io/instance: clickhouse
+      app.kubernetes.io/name: clickhouse
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/component: clickhouse
+        app.kubernetes.io/instance: clickhouse
+        app.kubernetes.io/name: clickhouse
+    spec:
+      containers:
+      - env:
+        - name: DEFAULT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: DEFAULT_PASSWORD
+              name: clickhouse-secret
+        - name: CLICKHOUSE_SHARD_ID
+          value: "01"
+        - name: CLICKHOUSE_REPLICA_ID
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        envFrom:
+        - secretRef:
+            name: clickhouse-secret
+        - configMapRef:
+            name: clickhouse-config
+        image: clickhouse/clickhouse-server:24.12.3.47-alpine
+        imagePullPolicy: IfNotPresent
+        name: clickhouse
+        ports:
+        - containerPort: 8123
+          name: http
+        - containerPort: 9000
+          name: tcp
+        resources:
+          limits:
+            cpu: 2
+            memory: 4Gi
+          requests:
+            cpu: 100m
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /var/lib/clickhouse
+          name: data
+        - mountPath: /etc/clickhouse-server/config.d/config.xml
+          name: config-xml
+          subPath: config.xml
+        - mountPath: /etc/clickhouse-server/users.d/users.xml
+          name: users-xml
+          subPath: users.xml
+      nodeSelector:
+        node-purpose: clickhouse
+      serviceAccountName: clickhouse
+      volumes:
+      - configMap:
+          name: clickhouse-config-xml
+        name: config-xml
+      - configMap:
+          name: clickhouse-users-xml
+        name: users-xml
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 10Gi
+      storageClassName: openebs-lvmpv

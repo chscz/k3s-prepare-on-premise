@@ -1,0 +1,261 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: otel-collector
+  name: apps
+---
+apiVersion: v1
+data:
+  API_ENDPOINT: api.apps.svc.cluster.local
+  CLICKHOUSE_HOST: clickhouse.database.svc.cluster.local
+  CLICKHOUSE_PORT: "9000"
+  DOCKER_MULTI_NODE_CLUSTER: "false"
+  LOW_CARDINAL_EXCEPTION_GROUPING: "false"
+  OTLP_EXPORTER_SYMBOLICATOR_ENDPOINT: symbolicator.apps.svc.cluster.local
+kind: ConfigMap
+metadata:
+  labels:
+    app: otel-collector
+  name: otel-collector-config-bmghf7m695
+  namespace: apps
+---
+apiVersion: v1
+data:
+  otel-collector-config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          grpc:
+            endpoint: 0.0.0.0:4317
+          http:
+            endpoint: 0.0.0.0:4318
+            cors:
+              allowed_origins:
+                - http://*
+                - https://*
+                - "null"
+              allowed_headers:
+                - "*"
+
+    processors:
+      imqaconsoleprintprocessor:
+        trace_enabled: false
+        log_enabled: false
+
+      imqaattributeprocessor:
+        enabled: true
+        # fetch_interval must be at least 60 seconds
+        fetch_interval: 60s
+        # custom field for kinfa(other company must be false, ref:apps/imqa_otel_collector/utils/crypto_kinfa.go)
+        encrypted_user_id_kinfa: false
+        clickhouse:
+          host: localhost
+          port: 9000
+          username: default
+
+      memory_limiter:
+        # 80% of maximum memory up to 2G
+        limit_mib: 1500 # 25% of limit up to 2G
+        spike_limit_mib: 512
+        check_interval: 5s # 50% of the maximum memory
+        limit_percentage: 50 # 20% of max memory usage spike expected
+        spike_limit_percentage: 20
+      #  queued_retry:
+      #     num_workers: 4
+      #     queue_size: 100
+      #     retry_on_failure: true
+
+      batch:
+        send_batch_size: 10000
+        send_batch_max_size: 11000
+        timeout: 10s
+
+    extensions:
+      health_check:
+        endpoint: 0.0.0.0:13133
+      zpages:
+        endpoint: 0.0.0.0:55679
+      pprof:
+        endpoint: 0.0.0.0:1777
+
+    exporters:
+      clickhousetraces:
+        database: imqa_traces
+        username: ${env:CLICKHOUSE_USERNAME}
+        password: ${env:CLICKHOUSE_PASSWORD}
+        host: ${env:CLICKHOUSE_HOST}
+        port: ${env:CLICKHOUSE_PORT}
+        docker_multi_node_cluster: ${env:DOCKER_MULTI_NODE_CLUSTER}
+        low_cardinal_exception_grouping: ${env:LOW_CARDINAL_EXCEPTION_GROUPING}
+
+      clickhouselogsexporterv2:
+        username: ${env:CLICKHOUSE_USERNAME}
+        password: ${env:CLICKHOUSE_PASSWORD}
+        host: ${env:CLICKHOUSE_HOST}
+        port: ${env:CLICKHOUSE_PORT}
+        database: imqa_logs
+        logs_table_name: logs_v2
+        create_schema: false
+        timeout: 10s
+        retry_on_failure:
+          enabled: true
+          initial_interval: 5s
+          max_interval: 30s
+          max_elapsed_time: 300s
+
+      otlphttp:
+        traces_endpoint: ${env:OTLP_EXPORTER_SYMBOLICATOR_ENDPOINT}/v1/traces
+        logs_endpoint: ${env:OTLP_EXPORTER_SYMBOLICATOR_ENDPOINT}/v1/logs
+        encoding: json
+        enabled: true
+
+    service:
+      telemetry:
+        metrics:
+          level: none
+          address: 0.0.0.0:8888
+
+      extensions:
+        - health_check
+        - zpages
+        - pprof
+
+      pipelines:
+        traces:
+          receivers: [ otlp ]
+          processors: [ imqaconsoleprintprocessor, memory_limiter, imqaattributeprocessor, batch ]
+          exporters: [ clickhousetraces, otlphttp ]
+
+        logs:
+          receivers: [ otlp ]
+          processors: [ imqaconsoleprintprocessor, memory_limiter, imqaattributeprocessor, batch ]
+          exporters: [ clickhouselogsexporterv2, otlphttp ]
+kind: ConfigMap
+metadata:
+  labels:
+    app: otel-collector
+  name: otel-collector-config-yaml
+  namespace: apps
+---
+apiVersion: v1
+data:
+  AES_DECRYPT_KEY_KINFA: MTIzNDU2Nzg5a2luZmExMjM0NTY3ODlpbXFhMTIz
+  CLICKHOUSE_PASSWORD: ZGpzbHpqYTAwODA=
+  CLICKHOUSE_USERNAME: ZGVmYXVsdA==
+kind: Secret
+metadata:
+  labels:
+    app: otel-collector
+  name: otel-collector-secret-c9g4dd294c
+  namespace: apps
+type: Opaque
+---
+apiVersion: v1
+data:
+  tls.crt: LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUd3RENDQmFpZ0F3SUJBZ0lRUEplMUowc0RCY1JrTW5wZWw2c2NkekFOQmdrcWhraUc5dzBCQVFzRkFEQ0IKbFRFTE1Ba0dBMVVFQmhNQ1IwSXhHekFaQmdOVkJBZ1RFa2R5WldGMFpYSWdUV0Z1WTJobGMzUmxjakVRTUE0RwpBMVVFQnhNSFUyRnNabTl5WkRFWU1CWUdBMVVFQ2hNUFUyVmpkR2xuYnlCTWFXMXBkR1ZrTVQwd093WURWUVFECkV6UlRaV04wYVdkdklGSlRRU0JQY21kaGJtbDZZWFJwYjI0Z1ZtRnNhV1JoZEdsdmJpQlRaV04xY21VZ1UyVnkKZG1WeUlFTkJNQjRYRFRJMU1EVXdNakF3TURBd01Gb1hEVEkyTURVd09USXpOVGsxT1Zvd1NERUxNQWtHQTFVRQpCaE1DUzFJeERqQU1CZ05WQkFnVEJWTmxiM1ZzTVJVd0V3WURWUVFLRXd4UFRsbERUMDBzSUVsT1F5NHhFakFRCkJnTlZCQU1NQ1NvdWFXMXhZUzVwYnpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRENDQVFvQ2dnRUIKQUtZUHhxRGF5YXk2S2tnYjFzSnlXZEptUUV4NTJGamtqMlVCWGxPNVFmWlRNeEd1Ym8vN3hKbzVUQmRsbitoQgpZU1gyZUo2UEh0YjN4eTNLSDE2NVA0N3dkOHBLa0lzdnkxWUdIby9ldWxsZHNZenMwVjdqNlVoMDJESi85UzhOClExMUpNcXNyTWU0eEMyRWRyZHlUa0VUVEhKUmlMU2U1VUl2UC96Ym91Q2lsajdvd093RXliU24waXpSSlFMVmcKWVZqc2VPTzAwaDR4bWhyd1h6U3krOTliMmVhdktLK2ZyZyttVDhhb1JxenRzMHUwN3RoMnZOUmQ4dU1IZCtTYQpDNGxOMmRlUGhZNkhlZ3hjUGk0bnFNSjB6NUlMN3hVU2VHclZaZUZRZGpMVitJNi8yM1EyMzhtb3BWc0VJNjZHCmVOVk03endWTUxuT3BhTmpTK1BLaE1jQ0F3RUFBYU9DQTFZd2dnTlNNQjhHQTFVZEl3UVlNQmFBRkJmWjFpVW4KWi9reHdrbEQyVEEyUkl4c3FVL3JNQjBHQTFVZERnUVdCQlFjbFZKN29Ra0tUTEdPSm15UnB5ZmJKaUMzNFRBTwpCZ05WSFE4QkFmOEVCQU1DQmFBd0RBWURWUjBUQVFIL0JBSXdBREFkQmdOVkhTVUVGakFVQmdnckJnRUZCUWNECkFRWUlLd1lCQlFVSEF3SXdTZ1lEVlIwZ0JFTXdRVEExQmd3ckJnRUVBYkl4QVFJQkF3UXdKVEFqQmdnckJnRUYKQlFjQ0FSWVhhSFIwY0hNNkx5OXpaV04wYVdkdkxtTnZiUzlEVUZNd0NBWUdaNEVNQVFJQ01Gb0dBMVVkSHdSVApNRkV3VDZCTm9FdUdTV2gwZEhBNkx5OWpjbXd1YzJWamRHbG5ieTVqYjIwdlUyVmpkR2xuYjFKVFFVOXlaMkZ1CmFYcGhkR2x2YmxaaGJHbGtZWFJwYjI1VFpXTjFjbVZUWlhKMlpYSkRRUzVqY213d2dZb0dDQ3NHQVFVRkJ3RUIKQkg0d2ZEQlZCZ2dyQmdFRkJRY3dBb1pKYUhSMGNEb3ZMMk55ZEM1elpXTjBhV2R2TG1OdmJTOVRaV04wYVdkdgpVbE5CVDNKbllXNXBlbUYwYVc5dVZtRnNhV1JoZEdsdmJsTmxZM1Z5WlZObGNuWmxja05CTG1OeWREQWpCZ2dyCkJnRUZCUWN3QVlZWGFIUjBjRG92TDI5amMzQXVjMlZqZEdsbmJ5NWpiMjB3SFFZRFZSMFJCQll3RklJSktpNXAKYlhGaExtbHZnZ2RwYlhGaExtbHZNSUlCZlFZS0t3WUJCQUhXZVFJRUFnU0NBVzBFZ2dGcEFXY0FkZ0NXbDJTLwpWVmlYcmZkRGgyZzNDRUozNmZBNjFmYWs4elp1UnFRL0Q4cXB4Z0FBQVphUlYrZkJBQUFFQXdCSE1FVUNJRWZsCnF6VkRoOGQ0aTFnREU1K0RzcTBHVjd2RVp4L2tkeTd6Q3ROb0preGZBaUVBc3dFSUlqcU9HUHpwVml2NEV4b2oKSFdRa1o0S0lna3MyOUVWb0dLbzhJeElBZFFBWmh0VEhLS3B2L3JvRGIzZ3FUUUdScXM0dGNqRVByczVkY0VFdApKVXpIMUFBQUFaYVJWK2RaQUFBRUF3QkdNRVFDSUJCUFVvR2dYTkVCb0RseTRWaFZJaHNxQ0NibUs4a0RXa0NpCnZWek5MbEVCQWlCaXdzb3VDWGZoN3ZGZ2IrWjhLTXJCNFdlVG5hOXRHNktOQWJWdkc2ckVJd0IyQUE1WGxMenoKcnFrK014c3NtUWV6OTVEZm04STljVElsM1NHcEpheGh4VTRoQUFBQmxwRlg2QUVBQUFRREFFY3dSUUloQU8zNgpIQ3MzcXA4L1N5aWFwM2lzb3NuNjBycXp1RW9tUkxkSVliRWhKZUdCQWlCNWg2UGpzMkM2ZWNVQWtKSmxCd1Z4CnNEa0tXRXhWbktRRnoyYStuaHlwZ0RBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQU1BZHhjeE5VaS9WOHhNU1kKUGp5S2hIMDBVeFJnK2tyRjlPNzQ2NlFKUWxvVVJKUmc2RjlCeXkxTUd6NDBKV3dJK0RHRE9IVmZaZ3llam8reQo0eHE3T3R4MFZWejZxWkRZUm9hYTFsSFRvZzlqbzNtZHoxa2RuY1djdXRnRXpWaTllMGdsdHZRdkxDWTNyZitSCmprVGY1V0hNajh6dXZ4Nk1wanFYT2ZMOUQrRWFhUkZSS0tkWVVXUzhxcHpidUdYR0dQTnpOWk9kbzBaZDRUYzcKTzFBVEhjNk14d01wbjFhRmhNSDFLRklSWUljdVFTRmI1djFZS1ZPeWNmbE4xbXFqY1FoS040UW0yUFdkS3pHZApVY2RHdStJbHJTdHJMZDZUNzVGWFBPS0hZWXZZN3orQkVUdkFmc2tnNXRLQ01sYWVaZHh4OUM0SFhsSXgydkozCjhSRmordz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUdHVENDQkFHZ0F3SUJBZ0lRRTMxVG5LcDhNYW1rTTNBWmFJUjZqVEFOQmdrcWhraUc5dzBCQVF3RkFEQ0IKaURFTE1Ba0dBMVVFQmhNQ1ZWTXhFekFSQmdOVkJBZ1RDazVsZHlCS1pYSnpaWGt4RkRBU0JnTlZCQWNUQzBwbApjbk5sZVNCRGFYUjVNUjR3SEFZRFZRUUtFeFZVYUdVZ1ZWTkZVbFJTVlZOVUlFNWxkSGR2Y21zeExqQXNCZ05WCkJBTVRKVlZUUlZKVWNuVnpkQ0JTVTBFZ1EyVnlkR2xtYVdOaGRHbHZiaUJCZFhSb2IzSnBkSGt3SGhjTk1UZ3gKTVRBeU1EQXdNREF3V2hjTk16QXhNak14TWpNMU9UVTVXakNCbFRFTE1Ba0dBMVVFQmhNQ1IwSXhHekFaQmdOVgpCQWdURWtkeVpXRjBaWElnVFdGdVkyaGxjM1JsY2pFUU1BNEdBMVVFQnhNSFUyRnNabTl5WkRFWU1CWUdBMVVFCkNoTVBVMlZqZEdsbmJ5Qk1hVzFwZEdWa01UMHdPd1lEVlFRREV6UlRaV04wYVdkdklGSlRRU0JQY21kaGJtbDYKWVhScGIyNGdWbUZzYVdSaGRHbHZiaUJUWldOMWNtVWdVMlZ5ZG1WeUlFTkJNSUlCSWpBTkJna3Foa2lHOXcwQgpBUUVGQUFPQ0FROEFNSUlCQ2dLQ0FRRUFuSk1DUmtWS1VraVMvRmVOK1MzcVU3NnpMTlhZcUtYc1cya0R3QjBRCjlsa3ozdjRIU0tqb2pIcG5TdkgxamNNM1p0QXlrZmZFblFSZ3hMVks0b09McDY0bTFGMDZYdmpSRm5HN2lyMXgKb24zSXpxSmdKTEJTb0RwRlVkNTRrMnhpWVBIa1ZweTNPL2M4VmRqZjFYb3hmRFYvRWxGdzRTeStCS3pMK2svaApmR1Zxd0VDbjJYeWxZNFFaNGZmSzc2cTA2RmhhMlpuakp0K09Fcks0M0RPeU50b1VIWlpZUWtCdUN5S0ZIRkVpCnJzVElCa1Z0a3VabnR4a2o1TmcyYTRYUWY4ZFM0OCt3ZFFIZ2liU292NG8yVHFQZ2JPdUVRYzZsTDBnaUU1ZFEKWWtVZUNhWE1uMnhYY0VBRzJ5RG9HOWJ6azR1bk1wNjNSQlVKMTYvOWZBRWMyd0lEQVFBQm80SUJiakNDQVdvdwpId1lEVlIwakJCZ3dGb0FVVTNtL1dxb3JTczlVZ09IWW04Q2Q4cklEWnNzd0hRWURWUjBPQkJZRUZCZloxaVVuClova3h3a2xEMlRBMlJJeHNxVS9yTUE0R0ExVWREd0VCL3dRRUF3SUJoakFTQmdOVkhSTUJBZjhFQ0RBR0FRSC8KQWdFQU1CMEdBMVVkSlFRV01CUUdDQ3NHQVFVRkJ3TUJCZ2dyQmdFRkJRY0RBakFiQmdOVkhTQUVGREFTTUFZRwpCRlVkSUFBd0NBWUdaNEVNQVFJQ01GQUdBMVVkSHdSSk1FY3dSYUJEb0VHR1AyaDBkSEE2THk5amNtd3VkWE5sCmNuUnlkWE4wTG1OdmJTOVZVMFZTVkhKMWMzUlNVMEZEWlhKMGFXWnBZMkYwYVc5dVFYVjBhRzl5YVhSNUxtTnkKYkRCMkJnZ3JCZ0VGQlFjQkFRUnFNR2d3UHdZSUt3WUJCUVVITUFLR00yaDBkSEE2THk5amNuUXVkWE5sY25SeQpkWE4wTG1OdmJTOVZVMFZTVkhKMWMzUlNVMEZCWkdSVWNuVnpkRU5CTG1OeWREQWxCZ2dyQmdFRkJRY3dBWVlaCmFIUjBjRG92TDI5amMzQXVkWE5sY25SeWRYTjBMbU52YlRBTkJna3Foa2lHOXcwQkFRd0ZBQU9DQWdFQVRoTkEKbHNuRDVtNWJ3T082OUJmaHJna2Z5Yi9MRENVVzhuTlRzM1lhdDZ0SUJ0Yk5BSHdnUlVORmJCWmFHeE5oMTBtNgpwQUtrck9qT3ppM0pLblNqM042dXE5Qm9OdmlScnp3QjkzZlZDOCtYcSt1SDV4V28rakJhWVhFZ3NjQkR4TG1QCmJZb3g2eFUySlB0aTFRdWNqK2xtdmVaaFVaZVR0aDJIdmJDMWJQNm1FU2tHWVRReE1EMGdKM05SME42Rmc5TjMKT1NCR2x0cW54bG9XSjRXeXowNFBUb3hjdnI0NEFQaEwrWEo3MVBKNjE2SXBoZEFFdXROQ0xGR0lVaTdSUFNSbgpSK3hWekJ2MHlqVHFKc0hlM2NRaGlmYTZlekllanBaZWhFVTR6NENxTjJtTFlCZDBGVWlSbkczd1RxTjN5aHNjClNQcjV6MG5vWDArRkN1S1BrQnVyY0V5YTY3ZW1QN1NzWGFSZnorYllpcGFROTA4bWdXQjJYUThrZDVHektqR2YKRmxxeVhZd2NLYXBJbkk1djAzaEFjTnQzN04zajBWY0ZjQzNtU1ppSUJZUmlCWEJXZG9ZNVR0TWlieDMrYmZFTwpzMkxFUE12QWhibGhIcnJoRllCWmxBeXVCYnVNZjFhK0hOSmF2NWZ5YWt5d3huQjJzSkNOd1FzMnVSSFkxaWhjCjZrLytKTGNZQ3BzTTBNRjhYUHRwdmN5aVRjYVF2S1pOOHJHNjFwcG5XNVlDVXRDQytjUUtYQTBvNEQvSStwV1YKaWRXa3ZrbHNRTEkrcUd1NDFTV3l4UDd4MDlmbjF0eERBWFl3K3p1TFhmZEtpWHlhTmI3OHl2QlhBZkNOUDZDSApNbnRIV3BkTGd0Sm13c1F0Nmo4azlLZjVxTG5qYXRrWVlhQTdqQlU9Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0KLS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUYzakNDQThhZ0F3SUJBZ0lRQWYxdE1QeWp5bEdvRzd4a0RqVURMVEFOQmdrcWhraUc5dzBCQVF3RkFEQ0IKaURFTE1Ba0dBMVVFQmhNQ1ZWTXhFekFSQmdOVkJBZ1RDazVsZHlCS1pYSnpaWGt4RkRBU0JnTlZCQWNUQzBwbApjbk5sZVNCRGFYUjVNUjR3SEFZRFZRUUtFeFZVYUdVZ1ZWTkZVbFJTVlZOVUlFNWxkSGR2Y21zeExqQXNCZ05WCkJBTVRKVlZUUlZKVWNuVnpkQ0JTVTBFZ1EyVnlkR2xtYVdOaGRHbHZiaUJCZFhSb2IzSnBkSGt3SGhjTk1UQXcKTWpBeE1EQXdNREF3V2hjTk16Z3dNVEU0TWpNMU9UVTVXakNCaURFTE1Ba0dBMVVFQmhNQ1ZWTXhFekFSQmdOVgpCQWdUQ2s1bGR5QktaWEp6WlhreEZEQVNCZ05WQkFjVEMwcGxjbk5sZVNCRGFYUjVNUjR3SEFZRFZRUUtFeFZVCmFHVWdWVk5GVWxSU1ZWTlVJRTVsZEhkdmNtc3hMakFzQmdOVkJBTVRKVlZUUlZKVWNuVnpkQ0JTVTBFZ1EyVnkKZEdsbWFXTmhkR2x2YmlCQmRYUm9iM0pwZEhrd2dnSWlNQTBHQ1NxR1NJYjNEUUVCQVFVQUE0SUNEd0F3Z2dJSwpBb0lDQVFDQUVtVVhOZzdEMndpejBLeFhEWGJ0elNmVFRLMVFnMkhpcWlCTkNTMWtDZHpPaVovTVBhbnM5cy9CCjNQSFRzZFo3TnlnUkswZmFPY2E4T2htMFg2YTlmWjJqWTBLMmR2S3BPeXVSK09KdjBPd1dJSkFKUHVMb2RNa1kKdEpIVVltVGJmNk1HOFlnWWFwQWlQTHorRS9DSEZIdjI1QitPMU9SUnhoRm5SZ2hSeTRZVVZEKzhNLzUrYkp6LwpGcDBZdlZHT05hYW5ac2h5WjlzaFpySFVtM2dEd0ZBNjZNenczTHllVFA2dkJaWTFIMWRhdC8vTytUMjNMTGIyClZOM0k1eEk2VGE1TWlyZGNtclMzSUQzS2Z5STBybjQ3YUdZQlJPY0JUa1pUbXpOZzk1UytVemVRYzBQek1zTlQKNzl1cS9uUk9hY2RyakdDVDNzVEhETi9oTXE3TWt6dFJlSlZuaSs0OVZ2NE0wR2tQR3cvekpTWnJNMjMzYmtmNgpjMFBsZmc2bFpyRXBmREtFWTFXSnhBM0JrMVF3R1JPczAzMDNwK3RkT213MVhOdEIxeExhcVVrTDM5aUFpZ21UCllvNjFaczhsaU0yRXVMRS9wRGtQMlFLZTZ4Sk1sWHp6YXdXcFhoYUR6TGhuNHVnVG5jeGJndE5NcysxYi85N2wKYzZ3ak95MEF2elZWZEFsSjJFbFlHbitTTnVaUmtnN3pKbjBjVFJlOHlleERKdEMvUVY5QXFVUkU5Sm5uVjRlZQpVQjlYVktnKy9YUmpMN0ZRWlFubVdFSXVReHBNdFBBbFIxbjZCQjZUMUNaR1NsQ0JzdDYrZUxmOFp4WGh5VmVFCkhnOWoxdWxpdXRaZlZTN3FYTVlvQ0FRbE9iZ09LNm55VEpjY0J6OE5Vdlh0N3krQ0R3SURBUUFCbzBJd1FEQWQKQmdOVkhRNEVGZ1FVVTNtL1dxb3JTczlVZ09IWW04Q2Q4cklEWnNzd0RnWURWUjBQQVFIL0JBUURBZ0VHTUE4RwpBMVVkRXdFQi93UUZNQU1CQWY4d0RRWUpLb1pJaHZjTkFRRU1CUUFEZ2dJQkFGelVmQTNQOXdGOVFabGxESFBGClVwL0wrTStaQm44YjJrTVZuNTRDVlZlV0ZQRlNQQ2VIbENqdEh6b0JONkoyL0ZOUXdJU2J4bXRPdW93aFQ2S08KVldLUjgya1YyTHlJNDhTcUMvM3ZxT2xMVlNvR0lHMVZlQ2taN2w4d1hFc2tFVlgvSkpwdVhpb3I3Z3RObjMvMwpBVGlVRkpWREJ3bjdZS251SEtzU2pLQ2FYcWVZYWxsdGl6OEkrOGpSUmE4WUZXU1FFZzl6S0M3RjRpUk8vRmpzCjhQUkYvaUt6NnkrTzB0bEZZUVhCbDIrb2RuS1BpNHcycjc4TkJjNXhqZWFtYng5c3BuRml4ZGpRZzNJTThXY1IKaVF5Y0UweHlOTis4MVhIZnFuSGQ0YmxzakR3U1hXWGF2VmNTdGtOci8rWGVUV1lSVWMrWnJ1d1h0dWh4a1l6ZQpTZjdkTlhHaUZTZVVITTloNHlhN2I2Tm5KU0ZkNXQwZEN5NW9HenVDcit5RFo0WFVtRkYwc2JtWmdJbi9mM2daClhIbEtZQzZTUUs1TU55b3N5Y2RpeUE1ZDl6WmJ5dUFsSlFHMDNSb0huSGNBUDlEYzFldzkxUHE3UDh5RjFtOS8KcVMzZnVRTDM5WmVhdFRYYXcyZXdoMHFwS0o0amp2OWNKMnZoc0UvekIrNEFMdFJaaDh0U1FaWHE5RWZYN21SQgpWWHlOV1FLVjNXS2R3cm51V2loMGhLV2J0NURIREFmZjlZazJkRExXS01Hd3NBdmduRXpESE5iODQybTFSMGFCCkw2S0NxOU5qUkhERWpmOHRNN3F0ajN1MWNJaXVQaG5QUUNqWS9NaVF1MTJaSXZWUzVsakZINGd4USs2SUhkZkcKamp4RGFoMm5HTjU5UFJieFl2bktrS2o5Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBcGcvR29OckpyTG9xU0J2V3duSlowbVpBVEhuWVdPU1BaUUZlVTdsQjlsTXpFYTV1CmovdkVtamxNRjJXZjZFRmhKZlo0bm84ZTF2ZkhMY29mWHJrL2p2QjN5a3FRaXkvTFZnWWVqOTY2V1YyeGpPelIKWHVQcFNIVFlNbi8xTHcxRFhVa3lxeXN4N2pFTFlSMnQzSk9RUk5NY2xHSXRKN2xRaTgvL051aTRLS1dQdWpBNwpBVEp0S2ZTTE5FbEF0V0JoV094NDQ3VFNIakdhR3ZCZk5MTDczMXZaNXE4b3I1K3VENlpQeHFoR3JPMnpTN1R1CjJIYTgxRjN5NHdkMzVKb0xpVTNaMTQrRmpvZDZERncrTGllb3duVFBrZ3Z2RlJKNGF0Vmw0VkIyTXRYNGpyL2IKZERiZnlhaWxXd1Fqcm9aNDFVenZQQlV3dWM2bG8yTkw0OHFFeHdJREFRQUJBb0lCQUQ2OUJ4WU9rdE1uSW9KTAp3aitFWkZzUk5vbXVId2EyazFaZHhmMXJxSGdmeHRPUFMwWXFvSVNEMFRPbHVWeE9GeDM0bUdtUE9OK09qVG5ICmUwS1dTbVQraE1Od21GdDlteHpOQXc3bjN3K1VUbGdud0pKUkdQbSs2MDlvK0lEbVNlVWNtb0FBdWNSNzB3akYKNWNISUhtRmlRUkh1WlpEMGVuSFlDMXY3WUZnNldIWnRNL3pNOXh5S05nUW00MStpazMvSFZaTkxFbWJSd2FndApGRE0reUZZdUZHQkd1VktEWEo1cm0zNW4rU2NpUUJZREdoSXVBQzIwNzViUW5XUzNMKzRBYzJZVXFwRUhEdFZPCmsxWTJvZUZITm5zVkxQcjIrQ2lOT1pWSUQ4L0ltdzFSbVJmcTBWb2d5a1F1TUg1bWNRMGlWUkErdlBkSWV1V3MKNTZ2S1BNRUNnWUVBM2F3UGFmQ2YrSlY1c1BYNGliU28xb05UTXZNSVp6SjJmcUg0R1VzUHpDK3Z6WUUzQWhjMgpCZnAybENSbVFtUVpPZ3hVb0xuZDJkRVFOSlNTNXgxTDIzcnhkMXdna0N4RnRiQXJKbnprVm5KbXE0Z25jTUxyClhVaTVFMFRaRTZZdEY5T1lObm5KWGFjTVZZL3hpdDUrQzhTR2drdm5LNWs3N2tSVjBlNDhwL3NDZ1lFQXY4Y1oKMS8zem1wem5MbmFYeFdrS1k2K3Z0MUJkOGlPRkZ4R1hIeDNNbHNlQ2xRNldhRmNhVjcrOWtWaWJSUThQZFBHWApqcW9pbE05T2J0eTRyYXhnUVFxaWd3RUVGZFRodk1tN1lrQkJWZDdPOHlHQ3pyZXZUY0phMVJ1cDN0N0tXUVRPCkZOL3JPSGZ6Q0lacVR1YktVRDU3SWc0cWFORnhNYzZpelg1Q3dLVUNnWUVBbkRrRmgrandKTFhiVkc2VklSOTAKR2ZIbGNiTzd5VmJVRWJ5K1o3enh2am9oVU5odTF3ZGFxRzN5b2NiaFZvckxDSkRtRjN2R01ScllxK1hGZmlHMApjMUs2MkI3U1NDa2JXOGR6TWFXMUdvTjNmZzN2bGRXWklGMy9LT2hOZ0Q2TjZ3dlJheHI3WWdnM2RobUM1aGFWCmlGK1JXRVI3LzhyM1pKMCtTanYyL1g4Q2dZQmx5aWJVZHUweXRtOGFRVVlET09LVDBLOUNiRHpCQmN0aFdDdlAKRDBFRkVyWWpxWTk1cUNuS1EzSTUwRDd4bzdHL2oyK3pBR2pFZFZnYkRicFVMRGNXcnE5ZE8wL1F5cUphVXZUTApqSEZoUTVheWc2bnJVS0dTYzBORTg1N3hOVzFQWEhhSnErUXNuN1gyWTJuUG9UM200NUwxbTNFMUcxMnFZeFFVCllCek1KUUtCZ0NZK09KaDhCaUZqYnJLd24vdnpPcURNR2F6eXdIOWhGcWw3L2Rub0hEL2xGbGxhbWxQSjY2Q2UKaVhyYjdHcEgzUXpqNExUa0dYZUhpbThlZGpieDcreFZ0WUp2NEJ3L21UOW14Q05DSHBuVmpRQ0RPc1VxdmtqOQpaMXJadG5UbUE1dFBNTXdoVkkySzdwLytEakpnc3o3anZBTC9ieTRyUHA0TTZvVlh6anp1Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCgo=
+kind: Secret
+metadata:
+  name: otel-collector-tls
+  namespace: apps
+type: kubernetes.io/tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: otel-collector
+  name: otel-collector
+  namespace: apps
+spec:
+  ports:
+  - name: grpc
+    nodePort: 30417
+    port: 4317
+    protocol: TCP
+    targetPort: 4317
+  - name: http
+    nodePort: 30418
+    port: 4318
+    protocol: TCP
+    targetPort: 4318
+  selector:
+    app: otel-collector
+  type: NodePort
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: otel-collector
+  name: otel-collector
+  namespace: apps
+spec:
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+      - args:
+        - --config=/etc/otel-collector-config.yaml
+        envFrom:
+        - configMapRef:
+            name: otel-collector-config-bmghf7m695
+        - secretRef:
+            name: otel-collector-secret-c9g4dd294c
+        image: imqav3.azurecr.io/otel-collector:4.0.0-rc.1
+        imagePullPolicy: IfNotPresent
+        name: otel-collector
+        ports:
+        - containerPort: 4317
+          name: grpc
+          protocol: TCP
+        - containerPort: 4318
+          name: http
+          protocol: TCP
+        - containerPort: 13133
+          name: health
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 4
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 2Gi
+        volumeMounts:
+        - mountPath: /etc/otel-collector-config.yaml
+          name: otel-config
+          subPath: otel-collector-config.yaml
+      volumes:
+      - configMap:
+          name: otel-collector-config-yaml
+        name: otel-config
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: otel-collector
+  namespace: apps
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: test-nh-collector.imqa.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: otel-collector
+            port:
+              number: 4318
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - test-nh-collector.imqa.io
+    secretName: otel-collector-tls

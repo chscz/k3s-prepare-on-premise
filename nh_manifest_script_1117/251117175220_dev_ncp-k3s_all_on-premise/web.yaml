@@ -1,0 +1,328 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: web
+  name: apps
+---
+apiVersion: v1
+data:
+  AUTH_TRUST_HOST: "true"
+  NEXT_PUBLIC_API_URL: https://223.130.154.137
+  NEXT_PUBLIC_APP_URL: https://223.130.154.137
+  NEXT_PUBLIC_AUTH_PROVIDER: credentials
+  NEXT_PUBLIC_AUTHENTICATOR: none
+  NEXT_PUBLIC_ENABLE_NEW_USER_CREATION: "true"
+  NEXT_PUBLIC_MAPPING_FILE: "true"
+  NEXT_PUBLIC_QUERY_BUILDER: "false"
+  NEXT_PUBLIC_SAML_SESSION_CHECK_DELAY_MS: "1000"
+  NEXT_PUBLIC_SAML_SUCCESS_REDIRECT_URL: /services
+  NEXT_PUBLIC_SERVICE_MODE: "true"
+  NEXT_TELEMETRY_DISABLED: "1"
+  NEXTAUTH_URL: https://223.130.154.137/api/auth
+kind: ConfigMap
+metadata:
+  labels:
+    app: web
+  name: web-config-b8k829tg44
+  namespace: apps
+---
+apiVersion: v1
+data:
+  DATABASE_URL: |
+    cG9zdGdyZXNxbDovL3Bvc3RncmVzOmRqc2x6amEwMDgwQHBvc3RncmVzcWwuZGF0YWJhc2
+    Uuc3ZjLmNsdXN0ZXIubG9jYWw6NTQzMi9hcGlkYj9zY2hlbWE9cHVibGljJmNvbm5lY3Rp
+    b25fbGltaXQ9NTAmcG9vbF90aW1lb3V0PTI=
+  NEXTAUTH_SECRET: |
+    ZTY4YjU1NzI1MmIzZWY4OTM3YjJhOGJkZTVhMTU4YzU2ZGViZjRiMTBjMTk1YTM2NjgwMj
+    BhYWY0NjVhYWJjMA==
+  OIDC_CLIENT_SECRET: YzdqN2lGZUowYjdlbVgzSTF3RW1YNVYwVkdmcjlsVTM=
+kind: Secret
+metadata:
+  labels:
+    app: web
+  name: web-secret-4g24dhcb7k
+  namespace: apps
+type: Opaque
+---
+apiVersion: v1
+data:
+  tls.crt: |
+    LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUd3RENDQmFpZ0F3SUJBZ0lRUEplMU
+    owc0RCY1JrTW5wZWw2c2NkekFOQmdrcWhraUc5dzBCQVFzRkFEQ0IKbFRFTE1Ba0dBMVVF
+    QmhNQ1IwSXhHekFaQmdOVkJBZ1RFa2R5WldGMFpYSWdUV0Z1WTJobGMzUmxjakVRTUE0Rw
+    pBMVVFQnhNSFUyRnNabTl5WkRFWU1CWUdBMVVFQ2hNUFUyVmpkR2xuYnlCTWFXMXBkR1Zr
+    TVQwd093WURWUVFECkV6UlRaV04wYVdkdklGSlRRU0JQY21kaGJtbDZZWFJwYjI0Z1ZtRn
+    NhV1JoZEdsdmJpQlRaV04xY21VZ1UyVnkKZG1WeUlFTkJNQjRYRFRJMU1EVXdNakF3TURB
+    d01Gb1hEVEkyTURVd09USXpOVGsxT1Zvd1NERUxNQWtHQTFVRQpCaE1DUzFJeERqQU1CZ0
+    5WQkFnVEJWTmxiM1ZzTVJVd0V3WURWUVFLRXd4UFRsbERUMDBzSUVsT1F5NHhFakFRCkJn
+    TlZCQU1NQ1NvdWFXMXhZUzVwYnpDQ0FTSXdEUVlKS29aSWh2Y05BUUVCQlFBRGdnRVBBRE
+    NDQVFvQ2dnRUIKQUtZUHhxRGF5YXk2S2tnYjFzSnlXZEptUUV4NTJGamtqMlVCWGxPNVFm
+    WlRNeEd1Ym8vN3hKbzVUQmRsbitoQgpZU1gyZUo2UEh0YjN4eTNLSDE2NVA0N3dkOHBLa0
+    lzdnkxWUdIby9ldWxsZHNZenMwVjdqNlVoMDJESi85UzhOClExMUpNcXNyTWU0eEMyRWRy
+    ZHlUa0VUVEhKUmlMU2U1VUl2UC96Ym91Q2lsajdvd093RXliU24waXpSSlFMVmcKWVZqc2
+    VPTzAwaDR4bWhyd1h6U3krOTliMmVhdktLK2ZyZyttVDhhb1JxenRzMHUwN3RoMnZOUmQ4
+    dU1IZCtTYQpDNGxOMmRlUGhZNkhlZ3hjUGk0bnFNSjB6NUlMN3hVU2VHclZaZUZRZGpMVi
+    tJNi8yM1EyMzhtb3BWc0VJNjZHCmVOVk03endWTUxuT3BhTmpTK1BLaE1jQ0F3RUFBYU9D
+    QTFZd2dnTlNNQjhHQTFVZEl3UVlNQmFBRkJmWjFpVW4KWi9reHdrbEQyVEEyUkl4c3FVL3
+    JNQjBHQTFVZERnUVdCQlFjbFZKN29Ra0tUTEdPSm15UnB5ZmJKaUMzNFRBTwpCZ05WSFE4
+    QkFmOEVCQU1DQmFBd0RBWURWUjBUQVFIL0JBSXdBREFkQmdOVkhTVUVGakFVQmdnckJnRU
+    ZCUWNECkFRWUlLd1lCQlFVSEF3SXdTZ1lEVlIwZ0JFTXdRVEExQmd3ckJnRUVBYkl4QVFJ
+    QkF3UXdKVEFqQmdnckJnRUYKQlFjQ0FSWVhhSFIwY0hNNkx5OXpaV04wYVdkdkxtTnZiUz
+    lEVUZNd0NBWUdaNEVNQVFJQ01Gb0dBMVVkSHdSVApNRkV3VDZCTm9FdUdTV2gwZEhBNkx5
+    OWpjbXd1YzJWamRHbG5ieTVqYjIwdlUyVmpkR2xuYjFKVFFVOXlaMkZ1CmFYcGhkR2x2Ym
+    xaaGJHbGtZWFJwYjI1VFpXTjFjbVZUWlhKMlpYSkRRUzVqY213d2dZb0dDQ3NHQVFVRkJ3
+    RUIKQkg0d2ZEQlZCZ2dyQmdFRkJRY3dBb1pKYUhSMGNEb3ZMMk55ZEM1elpXTjBhV2R2TG
+    1OdmJTOVRaV04wYVdkdgpVbE5CVDNKbllXNXBlbUYwYVc5dVZtRnNhV1JoZEdsdmJsTmxZ
+    M1Z5WlZObGNuWmxja05CTG1OeWREQWpCZ2dyCkJnRUZCUWN3QVlZWGFIUjBjRG92TDI5am
+    MzQXVjMlZqZEdsbmJ5NWpiMjB3SFFZRFZSMFJCQll3RklJSktpNXAKYlhGaExtbHZnZ2Rw
+    YlhGaExtbHZNSUlCZlFZS0t3WUJCQUhXZVFJRUFnU0NBVzBFZ2dGcEFXY0FkZ0NXbDJTLw
+    pWVmlYcmZkRGgyZzNDRUozNmZBNjFmYWs4elp1UnFRL0Q4cXB4Z0FBQVphUlYrZkJBQUFF
+    QXdCSE1FVUNJRWZsCnF6VkRoOGQ0aTFnREU1K0RzcTBHVjd2RVp4L2tkeTd6Q3ROb0preG
+    ZBaUVBc3dFSUlqcU9HUHpwVml2NEV4b2oKSFdRa1o0S0lna3MyOUVWb0dLbzhJeElBZFFB
+    Wmh0VEhLS3B2L3JvRGIzZ3FUUUdScXM0dGNqRVByczVkY0VFdApKVXpIMUFBQUFaYVJWK2
+    RaQUFBRUF3QkdNRVFDSUJCUFVvR2dYTkVCb0RseTRWaFZJaHNxQ0NibUs4a0RXa0NpCnZW
+    ek5MbEVCQWlCaXdzb3VDWGZoN3ZGZ2IrWjhLTXJCNFdlVG5hOXRHNktOQWJWdkc2ckVJd0
+    IyQUE1WGxMenoKcnFrK014c3NtUWV6OTVEZm04STljVElsM1NHcEpheGh4VTRoQUFBQmxw
+    Rlg2QUVBQUFRREFFY3dSUUloQU8zNgpIQ3MzcXA4L1N5aWFwM2lzb3NuNjBycXp1RW9tUk
+    xkSVliRWhKZUdCQWlCNWg2UGpzMkM2ZWNVQWtKSmxCd1Z4CnNEa0tXRXhWbktRRnoyYStu
+    aHlwZ0RBTkJna3Foa2lHOXcwQkFRc0ZBQU9DQVFFQU1BZHhjeE5VaS9WOHhNU1kKUGp5S2
+    hIMDBVeFJnK2tyRjlPNzQ2NlFKUWxvVVJKUmc2RjlCeXkxTUd6NDBKV3dJK0RHRE9IVmZa
+    Z3llam8reQo0eHE3T3R4MFZWejZxWkRZUm9hYTFsSFRvZzlqbzNtZHoxa2RuY1djdXRnRX
+    pWaTllMGdsdHZRdkxDWTNyZitSCmprVGY1V0hNajh6dXZ4Nk1wanFYT2ZMOUQrRWFhUkZS
+    S0tkWVVXUzhxcHpidUdYR0dQTnpOWk9kbzBaZDRUYzcKTzFBVEhjNk14d01wbjFhRmhNSD
+    FLRklSWUljdVFTRmI1djFZS1ZPeWNmbE4xbXFqY1FoS040UW0yUFdkS3pHZApVY2RHdStJ
+    bHJTdHJMZDZUNzVGWFBPS0hZWXZZN3orQkVUdkFmc2tnNXRLQ01sYWVaZHh4OUM0SFhsSX
+    gydkozCjhSRmordz09Ci0tLS0tRU5EIENFUlRJRklDQVRFLS0tLS0K
+  tls.key: |
+    LS0tLS1CRUdJTiBSU0EgUFJJVkFURSBLRVktLS0tLQpNSUlFb3dJQkFBS0NBUUVBcGcvR2
+    9OckpyTG9xU0J2V3duSlowbVpBVEhuWVdPU1BaUUZlVTdsQjlsTXpFYTV1CmovdkVtamxN
+    RjJXZjZFRmhKZlo0bm84ZTF2ZkhMY29mWHJrL2p2QjN5a3FRaXkvTFZnWWVqOTY2V1YyeG
+    pPelIKWHVQcFNIVFlNbi8xTHcxRFhVa3lxeXN4N2pFTFlSMnQzSk9RUk5NY2xHSXRKN2xR
+    aTgvL051aTRLS1dQdWpBNwpBVEp0S2ZTTE5FbEF0V0JoV094NDQ3VFNIakdhR3ZCZk5MTD
+    czMXZaNXE4b3I1K3VENlpQeHFoR3JPMnpTN1R1CjJIYTgxRjN5NHdkMzVKb0xpVTNaMTQr
+    RmpvZDZERncrTGllb3duVFBrZ3Z2RlJKNGF0Vmw0VkIyTXRYNGpyL2IKZERiZnlhaWxXd1
+    Fqcm9aNDFVenZQQlV3dWM2bG8yTkw0OHFFeHdJREFRQUJBb0lCQUQ2OUJ4WU9rdE1uSW9K
+    TAp3aitFWkZzUk5vbXVId2EyazFaZHhmMXJxSGdmeHRPUFMwWXFvSVNEMFRPbHVWeE9GeD
+    M0bUdtUE9OK09qVG5ICmUwS1dTbVQraE1Od21GdDlteHpOQXc3bjN3K1VUbGdud0pKUkdQ
+    bSs2MDlvK0lEbVNlVWNtb0FBdWNSNzB3akYKNWNISUhtRmlRUkh1WlpEMGVuSFlDMXY3WU
+    ZnNldIWnRNL3pNOXh5S05nUW00MStpazMvSFZaTkxFbWJSd2FndApGRE0reUZZdUZHQkd1
+    VktEWEo1cm0zNW4rU2NpUUJZREdoSXVBQzIwNzViUW5XUzNMKzRBYzJZVXFwRUhEdFZPCm
+    sxWTJvZUZITm5zVkxQcjIrQ2lOT1pWSUQ4L0ltdzFSbVJmcTBWb2d5a1F1TUg1bWNRMGlW
+    UkErdlBkSWV1V3MKNTZ2S1BNRUNnWUVBM2F3UGFmQ2YrSlY1c1BYNGliU28xb05UTXZNSV
+    p6SjJmcUg0R1VzUHpDK3Z6WUUzQWhjMgpCZnAybENSbVFtUVpPZ3hVb0xuZDJkRVFOSlNT
+    NXgxTDIzcnhkMXdna0N4RnRiQXJKbnprVm5KbXE0Z25jTUxyClhVaTVFMFRaRTZZdEY5T1
+    lObm5KWGFjTVZZL3hpdDUrQzhTR2drdm5LNWs3N2tSVjBlNDhwL3NDZ1lFQXY4Y1oKMS8z
+    em1wem5MbmFYeFdrS1k2K3Z0MUJkOGlPRkZ4R1hIeDNNbHNlQ2xRNldhRmNhVjcrOWtWaW
+    JSUThQZFBHWApqcW9pbE05T2J0eTRyYXhnUVFxaWd3RUVGZFRodk1tN1lrQkJWZDdPOHlH
+    Q3pyZXZUY0phMVJ1cDN0N0tXUVRPCkZOL3JPSGZ6Q0lacVR1YktVRDU3SWc0cWFORnhNYz
+    Zpelg1Q3dLVUNnWUVBbkRrRmgrandKTFhiVkc2VklSOTAKR2ZIbGNiTzd5VmJVRWJ5K1o3
+    enh2am9oVU5odTF3ZGFxRzN5b2NiaFZvckxDSkRtRjN2R01ScllxK1hGZmlHMApjMUs2Mk
+    I3U1NDa2JXOGR6TWFXMUdvTjNmZzN2bGRXWklGMy9LT2hOZ0Q2TjZ3dlJheHI3WWdnM2Ro
+    bUM1aGFWCmlGK1JXRVI3LzhyM1pKMCtTanYyL1g4Q2dZQmx5aWJVZHUweXRtOGFRVVlET0
+    9LVDBLOUNiRHpCQmN0aFdDdlAKRDBFRkVyWWpxWTk1cUNuS1EzSTUwRDd4bzdHL2oyK3pB
+    R2pFZFZnYkRicFVMRGNXcnE5ZE8wL1F5cUphVXZUTApqSEZoUTVheWc2bnJVS0dTYzBORT
+    g1N3hOVzFQWEhhSnErUXNuN1gyWTJuUG9UM200NUwxbTNFMUcxMnFZeFFVCllCek1KUUtC
+    Z0NZK09KaDhCaUZqYnJLd24vdnpPcURNR2F6eXdIOWhGcWw3L2Rub0hEL2xGbGxhbWxQSj
+    Y2Q2UKaVhyYjdHcEgzUXpqNExUa0dYZUhpbThlZGpieDcreFZ0WUp2NEJ3L21UOW14Q05D
+    SHBuVmpRQ0RPc1VxdmtqOQpaMXJadG5UbUE1dFBNTXdoVkkySzdwLytEakpnc3o3anZBTC
+    9ieTRyUHA0TTZvVlh6anp1Ci0tLS0tRU5EIFJTQSBQUklWQVRFIEtFWS0tLS0tCgo=
+kind: Secret
+metadata:
+  name: web-tls-5c6kfd8f6k
+  namespace: apps
+type: kubernetes.io/tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: web
+  name: web
+  namespace: apps
+spec:
+  ports:
+  - port: 3301
+    protocol: TCP
+    targetPort: 3000
+  selector:
+    app: web
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: web
+  name: web
+  namespace: apps
+spec:
+  selector:
+    matchLabels:
+      app: web
+  template:
+    metadata:
+      labels:
+        app: web
+    spec:
+      containers:
+      - env:
+        - name: SCOPE
+          value: web
+        envFrom:
+        - configMapRef:
+            name: web-config-b8k829tg44
+        - secretRef:
+            name: web-secret-4g24dhcb7k
+        image: imqav3.azurecr.io/imqa-web-frontend:4.0.0-rc.3
+        imagePullPolicy: IfNotPresent
+        name: web
+        ports:
+        - containerPort: 3000
+        resources:
+          limits:
+            cpu: 2
+            memory: 4Gi
+          requests:
+            cpu: 500m
+            memory: 1Gi
+      nodeSelector: null
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web
+  namespace: apps
+spec:
+  ingressClassName: traefik
+  rules:
+  - host: test-nh.imqa.io
+    http:
+      paths:
+      - backend:
+          service:
+            name: web
+            port:
+              number: 3301
+        path: /api/auth
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /api
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /graphql
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /assets
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /docs
+        pathType: Prefix
+      - backend:
+          service:
+            name: web
+            port:
+              number: 3301
+        path: /_next
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /auth
+        pathType: Prefix
+      - backend:
+          service:
+            name: web
+            port:
+              number: 3301
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - test-nh.imqa.io
+    secretName: web-tls-5c6kfd8f6k
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: web-ip
+  namespace: apps
+spec:
+  ingressClassName: traefik
+  rules:
+  - http:
+      paths:
+      - backend:
+          service:
+            name: web
+            port:
+              number: 3301
+        path: /api/auth
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /api
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /graphql
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /assets
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /docs
+        pathType: Prefix
+      - backend:
+          service:
+            name: web
+            port:
+              number: 3301
+        path: /_next
+        pathType: Prefix
+      - backend:
+          service:
+            name: api
+            port:
+              number: 8000
+        path: /auth
+        pathType: Prefix
+      - backend:
+          service:
+            name: web
+            port:
+              number: 3301
+        path: /
+        pathType: Prefix

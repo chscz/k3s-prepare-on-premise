@@ -1,0 +1,54 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: otel-schema-migrator
+  name: apps
+---
+apiVersion: v1
+data:
+  CLICKHOUSE_HOST: clickhouse.database.svc.cluster.local
+  CLICKHOUSE_PORT: "9000"
+kind: ConfigMap
+metadata:
+  labels:
+    app: otel-schema-migrator
+  name: otel-schema-migrator-config-4.0.0-rc.1-7fckbcdffb
+  namespace: apps
+---
+apiVersion: v1
+data:
+  CLICKHOUSE_PASSWORD: ZGpzbHpqYTAwODA=
+  CLICKHOUSE_USERNAME: ZGVmYXVsdA==
+kind: Secret
+metadata:
+  labels:
+    app: otel-schema-migrator
+  name: otel-schema-migrator-secret-4.0.0-rc.1-h6899ktmtm
+  namespace: apps
+type: Opaque
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  labels:
+    app: otel-schema-migrator
+  name: otel-schema-migrator-job-4.0.0-rc.1
+  namespace: apps
+spec:
+  template:
+    metadata:
+      labels:
+        app: otel-schema-migrator
+      name: otel-schema-migrator
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: otel-schema-migrator-config-4.0.0-rc.1-7fckbcdffb
+        - secretRef:
+            name: otel-schema-migrator-secret-4.0.0-rc.1-h6899ktmtm
+        image: imqav3.azurecr.io/otel-schema-migrator:4.0.0-rc.1
+        imagePullPolicy: IfNotPresent
+        name: otel-schema-migrator
+      restartPolicy: Never

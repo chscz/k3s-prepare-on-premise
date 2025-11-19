@@ -1,0 +1,113 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: api
+  name: apps
+---
+apiVersion: v1
+data:
+  API_DOMAIN: https://test-nh.imqa.io
+  API_ENV: prod
+  API_QUERY_SERVICE_URL: http://query-service:8080
+  AUTH_URL: https://test-nh.imqa.io/api/auth
+  CORS_ORIGINS: https://studio.apollographql.com,https://test-nh.imqa.io,https://test-nh.imqa.io:8000,http://query-service
+  DATABASE_URL: postgresql://postgres:password@postgresql.database.svc.cluster.local:5432/apidb?schema=public&connection_limit=50&pool_timeout=20
+  DEPLOYMENT_TYPE: docker-standalone-amd
+  LOG_FORMAT: plain
+  LOG_LEVEL: debug
+  MAX_ROW_COUNT: "1000000"
+  NEXT_PUBLIC_AUTH_PROVIDER: credentials
+  S3_BUCKET_NAME: api
+  S3_ENDPOINT: http://minio.minio.svc.cluster.local:9000
+  SAML_CONFIG_FILE: /app/config/saml/config.json
+  SEED_ADMIN_EMAIL: admin@imqa.io
+kind: ConfigMap
+metadata:
+  labels:
+    app: api
+  name: api-config-h7mgbckhf9
+  namespace: apps
+---
+apiVersion: v1
+data:
+  API_SECRET: YXBpLXNlY3JldC10b2tlbi1yYW5kb20tc3RyaW5nLS0=
+  AUTH_SECRET: |
+    ZTY4YjU1NzI1MmIzZWY4OTM3YjJhOGJkZTVhMTU4YzU2ZGViZjRiMTBjMTk1YTM2NjgwMj
+    BhYWY0NjVhYWJjMA==
+  AWS_ACCESS_KEY_ID: bWluaW9hZG1pbg==
+  AWS_SECRET_ACCESS_KEY: ZGpzbHpqYW1pbmlv
+  DATABASE_URL: |
+    cG9zdGdyZXNxbDovL3Bvc3RncmVzOmRqc2x6amEwMDgwQHBvc3RncmVzcWwuZGF0YWJhc2
+    Uuc3ZjLmNsdXN0ZXIubG9jYWw6NTQzMi9hcGlkYj9zY2hlbWE9cHVibGljJmNvbm5lY3Rp
+    b25fbGltaXQ9NTAmcG9vbF90aW1lb3V0PTI=
+  NEXTAUTH_SECRET: |
+    ZTY4YjU1NzI1MmIzZWY4OTM3YjJhOGJkZTVhMTU4YzU2ZGViZjRiMTBjMTk1YTM2NjgwMj
+    BhYWY0NjVhYWJjMA==
+  SEED_ADMIN_PASSWORD: ZGpzbHpqYTAwODA=
+kind: Secret
+metadata:
+  labels:
+    app: api
+  name: api-secret-h79k66hfdc
+  namespace: apps
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: api
+  name: api
+  namespace: apps
+spec:
+  ports:
+  - port: 8000
+    protocol: TCP
+    targetPort: 8000
+  selector:
+    app: api
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: api
+  name: api
+  namespace: apps
+spec:
+  selector:
+    matchLabels:
+      app: api
+  template:
+    metadata:
+      labels:
+        app: api
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: api-config-h7mgbckhf9
+        - secretRef:
+            name: api-secret-h79k66hfdc
+        image: imqav3.azurecr.io/api:4.0.0-rc.2
+        imagePullPolicy: IfNotPresent
+        name: api
+        ports:
+        - containerPort: 8000
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 1Gi
+        volumeMounts:
+        - mountPath: /app/config/saml/
+          name: config-volume
+      nodeSelector:
+        kubernetes.io/hostname: null
+      volumes:
+      - emptyDir: {}
+        name: config-volume

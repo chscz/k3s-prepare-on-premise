@@ -1,0 +1,87 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  labels:
+    app: query-service
+  name: apps
+---
+apiVersion: v1
+data:
+  API_ENDPOINT: api.apps.svc.cluster.local:8000
+  CLICKHOUSE_HOST: clickhouse.database.svc.cluster.local
+  CLICKHOUSE_PORT: "9000"
+  CLICKHOUSE_QUERY_LOG_ENABLED: "false"
+  CLICKHOUSE_TTL: "2592000"
+  GODEBUG: netdns=go
+  STORAGE: clickhouse
+  TELEMETRY_ENABLED: "false"
+kind: ConfigMap
+metadata:
+  labels:
+    app: query-service
+  name: query-service-config-c7fhmm5826
+  namespace: apps
+---
+apiVersion: v1
+data:
+  CLICKHOUSE_PASSWORD: ZGpzbHpqYTAwODA=
+  CLICKHOUSE_USERNAME: ZGVmYXVsdA==
+kind: Secret
+metadata:
+  labels:
+    app: query-service
+  name: query-service-secret-h6899ktmtm
+  namespace: apps
+type: Opaque
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: query-service
+  name: query-service
+  namespace: apps
+spec:
+  ports:
+  - name: public
+    port: 8080
+    protocol: TCP
+    targetPort: 8080
+  selector:
+    app: query-service
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: query-service
+  name: query-service
+  namespace: apps
+spec:
+  selector:
+    matchLabels:
+      app: query-service
+  template:
+    metadata:
+      labels:
+        app: query-service
+    spec:
+      containers:
+      - envFrom:
+        - configMapRef:
+            name: query-service-config-c7fhmm5826
+        - secretRef:
+            name: query-service-secret-h6899ktmtm
+        image: imqav3.azurecr.io/query-service:4.0.0-rc.1
+        imagePullPolicy: IfNotPresent
+        name: query-service
+        ports:
+        - containerPort: 8080
+        resources:
+          limits:
+            cpu: 1
+            memory: 2Gi
+          requests:
+            cpu: 100m
+            memory: 1Gi
